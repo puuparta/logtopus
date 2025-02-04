@@ -1,0 +1,35 @@
+{
+  "namespace": "io.treebear.signalprocessing",
+  "type": "record",
+  "name": "MeasurementSession",
+  "fields": [
+    {
+      "name": "measurement_id",
+      "type": "string",
+      "doc": "Mittaus- tai istunnon yksilöivä tunniste."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Mittauksen aloitusaika millisekunneissa (UTC)."
+    },
+    {
+      "name": "duration_ms",
+      "type": "long",
+      "doc": "Mittausjakson tai hit event -ikkunan kesto millisekunneissa."
+    },
+    {
+      "name": "center_frequency_hz",
+      "type": "long",
+      "doc": "Keskitaajuus Hz:ssä."
+    },
+    {
+      "name": "raw_data",
+      "type": "bytes",
+      "doc": "RF-näytteet pakattuina."
+    }
+  ]
+}

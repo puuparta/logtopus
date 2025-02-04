@@ -1,0 +1,83 @@
+@startuml
+title Detailed Data Flow Diagram for Realtime RF Measurement System
+
+' ----------------------
+' Hardware Layer
+' ----------------------
+package "Hardware Layer" {
+  rectangle "RTL-SDR Receiver\n(2.4 MS/s, 1.42 GHz)" as RTL
+  rectangle "RF Front-End\n(Antenna, LNA, Bandpass Filter)" as RFFE
+  RTL --> RFFE : RF Signal
+}
+
+' ----------------------
+' Data Acquisition Layer
+' ----------------------
+package "Data Acquisition" {
+  rectangle "Data Acquisition Module\n(Read from RTL-SDR)" as DA
+  rectangle "Ring Buffer\n(Stores continuous data for 5-10 sec)" as RB
+  RFFE --> DA : Processed RF Signal
+  DA --> RB : Write continuous data
+}
+
+' ----------------------
+' Realtime Processing Layer
+' ----------------------
+package "Realtime Processing" {
+  rectangle "TriggerHandler\n(FFT, SNR, Thresholding)" as TH
+  rectangle "HitSpool\n(Extract Pre/Post Trigger Window)" as HS
+  rectangle "Event Filter\n(Additional Filtering & Classification)" as EF
+
+  RB --> TH : Monitor data stream
+  TH --> HS : Trigger Signal\n(plus trigger_info)
+  HS --> EF : Extracted Hit Event Window\n(with sample indices)
+}
+
+' ----------------------
+' Persistent Storage & Analysis Layer
+' ----------------------
+package "Storage & Analysis" {
+  rectangle "Persistent Storage\n(Hierarchical Parquet Files)" as PS
+  rectangle "Realtime/Offline Analytics\n(Spark Streaming, Jupyter Notebook)" as RA
+
+  EF --> PS : Save filtered event data\n(with metadata: measurement, trigger_info,\nraw_data, FFT, analysis_metrics)
+  PS --> RA : Data for analysis & visualization
+}
+
+' ----------------------
+' Diagnostics & Logging
+' ----------------------
+package "Diagnostics" {
+  rectangle "Logging System\n(Event logging, Error handling)" as LOG
+
+  DA --> LOG : Log Data Acquisition events
+  TH --> LOG : Log Trigger events
+  HS --> LOG : Log Hit Data extraction
+  EF --> LOG : Log Filtering decisions
+}
+
+' ----------------------
+' Lisäselvitykset ja annotaatiot
+' ----------------------
+note right of TH
+  TriggerHandler performs real-time FFT analysis,
+  calculates SNR and compares against pre-defined thresholds.
+  When the trigger condition is met, it outputs a trigger signal
+  along with trigger_info (trigger_timestamp, pre-/post-trigger duration,
+  trigger_value, etc.).
+end note
+
+note right of HS
+  HitSpool extracts a data window from the Ring Buffer, including
+  data from before and after the trigger event. This window (hit event)
+  is tagged with sample indices to preserve relative timing.
+end note
+
+note right of EF
+  Event Filter further processes the hit event data by applying
+  additional noise reduction, re-computing FFT if necessary,
+  and optionally classifying the event using lightweight ML models.
+  Only data that passes the quality checks is forwarded for storage.
+end note
+
+@enduml

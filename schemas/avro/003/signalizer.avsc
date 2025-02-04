@@ -1,0 +1,252 @@
+{
+  "namespace": "io.treebear.signalprocessing",
+  "type": "record",
+  "name": "MeasurementSession",
+  "doc": "Skeema RF-mittausdatan tallentamiseen. Kaikki aikaleimat ovat UTC. Sisältää mittausparametrit, laitteistotiedot, ympäristöolosuhteet, triggeritiedot, pakatun hit event -raakadatan, FFT-tulokset, analyysimetriikat ja järjestelmän tiedot.",
+  "fields": [
+    {
+      "name": "measurement_id",
+      "type": "string",
+      "doc": "Mittaus- tai istunnon yksilöivä tunniste."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Mittauksen aloitusaika millisekunneissa (UTC)."
+    },
+    {
+      "name": "measurement_date",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "doc": "Mittauksen päivämäärä (YYYY-MM-DD), johdettu timestampista ETL-prosessissa; käytetään partitiointiin."
+    },
+    {
+      "name": "measurement_hour",
+      "type": "int",
+      "doc": "Mittauksen tunti (0–23), johdettu timestampista ETL-prosessissa; mahdollistaa hienojakoisemman partitioinnin."
+    },
+    {
+      "name": "duration_ms",
+      "type": "long",
+      "doc": "Mittausjakson tai hit event -ikkunan kesto millisekunneissa."
+    },
+    {
+      "name": "center_frequency_hz",
+      "type": "long",
+      "doc": "Keskitaajuus Hz:ssä (kokonaisluku, esim. 1_420_000_000 Hz)."
+    },
+    {
+      "name": "sample_rate_hz",
+      "type": "long",
+      "doc": "Näytteenottotaajuus Hz:ssä (kokonaisluku, esim. 2_400_000 Hz)."
+    },
+    {
+      "name": "antenna_info",
+      "type": {
+        "type": "record",
+        "name": "AntennaInfo",
+        "doc": "Tietoja antennista ja siihen liittyvästä RF-komponentista.",
+        "fields": [
+          {
+            "name": "antenna_type",
+            "type": "string",
+            "doc": "Antenni tyyppi, esimerkiksi 'Dipoli' tai 'Yagi'."
+          },
+          {
+            "name": "lna_gain_db",
+            "type": "double",
+            "doc": "LNA:n (Low-Noise Amplifier) vahvistus desibeleinä."
+          },
+          {
+            "name": "calibration_date",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            },
+            "doc": "RF-laitteiston kalibroinnin päivämäärä (UTC)."
+          }
+        ]
+      },
+      "doc": "RF-laitteiston tiedot, mukaan lukien antenni, LNA ja mahdolliset suodattimet."
+    },
+    {
+      "name": "environmental",
+      "type": {
+        "type": "record",
+        "name": "EnvironmentalData",
+        "doc": "Mittausympäristön metatiedot.",
+        "fields": [
+          {
+            "name": "temperature_c",
+            "type": "double",
+            "doc": "Lämpötila Celsius-asteina."
+          },
+          {
+            "name": "humidity_percent",
+            "type": "double",
+            "doc": "Kosteusprosentti."
+          },
+          {
+            "name": "rfi_noise_level_dbm",
+            "type": "double",
+            "doc": "RF-häiriötaso desibeleinä suhteessa 1 mW:hen (dBm)."
+          }
+        ]
+      },
+      "doc": "Tietoja mittausympäristön olosuhteista."
+    },
+    {
+      "name": "trigger_info",
+      "type": {
+        "type": "record",
+        "name": "TriggerInfo",
+        "doc": "Reaaliaikaisen analyysin triggeritiedot.",
+        "fields": [
+          {
+            "name": "trigger_timestamp",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            },
+            "doc": "Triggerin laukeamisaika (UTC)."
+          },
+          {
+            "name": "pre_trigger_duration_ms",
+            "type": "long",
+            "doc": "Aikaväli (ms) ennen triggeriä, jolta dataa tallennetaan."
+          },
+          {
+            "name": "post_trigger_duration_ms",
+            "type": "long",
+            "doc": "Aikaväli (ms) triggerin jälkeen, jolta dataa tallennetaan."
+          },
+          {
+            "name": "trigger_value",
+            "type": "double",
+            "doc": "Arvo, joka ylitti määritellyn kynnysarvon ja laukaisi triggerin."
+          },
+          {
+            "name": "triggered",
+            "type": "boolean",
+            "doc": "Indikaattori siitä, että trigger laukaistiin."
+          },
+          {
+            "name": "trigger_offset_ms",
+            "type": "long",
+            "doc": "Triggerin viive millisekunteina suhteessa mittauksen aloitusaikaan (timestamp)."
+          }
+        ]
+      },
+      "doc": "Reaaliaikaisen analyysin triggeritiedot."
+    },
+    {
+      "name": "event_id",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "(Valinnainen) Yksilöllinen tunniste hit event -tapahtumalle, mikäli useita tapahtumia syntyy samassa mittausistunnossa."
+    },
+    {
+      "name": "raw_data",
+      "type": "bytes",
+      "doc": "RF-näytteet pakattuina Little-endian 32-bit float -muodossa (interleaved I/Q), base64-koodattuna."
+    },
+    {
+      "name": "fft_results",
+      "type": {
+        "type": "record",
+        "name": "FFTResults",
+        "doc": "FFT-analyysin tulokset hit event -ikkunasta.",
+        "fields": [
+          {
+            "name": "frequencies_hz",
+            "type": {
+              "type": "array",
+              "items": "double"
+            },
+            "doc": "FFT:n laskema taajuusvektori Hz:ssä."
+          },
+          {
+            "name": "amplitudes",
+            "type": {
+              "type": "array",
+              "items": "double"
+            },
+            "doc": "FFT-amplitudit normalisoituna dBFS:ään (0 dBFS = täysi asteikko)."
+          },
+          {
+            "name": "phases",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": "double"
+              }
+            ],
+            "default": null,
+            "doc": "FFT:n laskemat vaihekulmat kullekin taajuudelle (valinnainen)."
+          }
+        ]
+      },
+      "doc": "FFT-analyysin tulokset hit event -ikkunasta."
+    },
+    {
+      "name": "analysis_metrics",
+      "type": {
+        "type": "record",
+        "name": "AnalysisMetrics",
+        "doc": "Lisäanalyysin tulokset ja laskelmat.",
+        "fields": [
+          {
+            "name": "signal_to_noise_ratio",
+            "type": "double",
+            "doc": "Laskettu signal-to-noise ratio (SNR)."
+          },
+          {
+            "name": "burst_detected",
+            "type": "boolean",
+            "doc": "Indikaattori siitä, havaittuako merkittävä burst signaalissa."
+          },
+          {
+            "name": "additional_metrics",
+            "type": {
+              "type": "map",
+              "values": "double"
+            },
+            "doc": "Muita laskettuja arvoja avainsana-arvopareina."
+          }
+        ]
+      },
+      "doc": "Lisäanalyysin tulokset, kuten SNR, burst-indikaattori ja muut metriikat."
+    },
+    {
+      "name": "system_info",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "SystemInfo",
+          "doc": "Tietoja mittausjärjestelmän ohjelmisto- ja laiteympäristöstä.",
+          "fields": [
+            {
+              "name": "system_version",
+              "type": "string",
+              "doc": "Järjestelmän tai ohjelmiston versio."
+            },
+            {
+              "name": "library_info",
+              "type": "string",
+              "doc": "Käytettyjen kirjastojen ja niiden versioiden tiedot."
+            }
+          ]
+        }
+      ],
+      "default": null,
+      "doc": "Valinnainen osio, joka sisältää tietoja mittausjärjestelmän ympäristöstä."
+    }
+  ]
+}
